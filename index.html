@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - Instant Gyro Engine</title>
+    <title>2D Coin - HDRI Reflection Engine</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
         #ui-panel { width: 280px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
         h3 { margin: 0 0 10px 0; background: #666; color: white; padding: 5px; border: 1px inset #eee; font-size: 12px; text-align: center; }
         .group { border: 1px solid #999; padding: 8px; margin-bottom: 10px; background: #e1e1e1; border-radius: 3px; }
-        .group-title { display: block; margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #ccc; text-transform: uppercase; font-size: 10px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; gap: 5px; }
         label { width: 95px; font-weight: bold; }
         input[type=range] { flex-grow: 1; cursor: pointer; }
@@ -25,11 +24,26 @@
 <body>
 
     <div id="gyro-overlay">
-        <button id="start-gyro-btn">START SENSORS</button>
+        <button id="start-gyro-btn">ACTIVEAZĂ SENZORII</button>
     </div>
 
     <div id="ui-panel">
-        <h3>Bevel and Emboss</h3>
+        <h3>Layer Style</h3>
+        
+        <div class="group">
+            <strong>Reflection (HDRI)</strong>
+            <div class="row">
+                <label>Intensity:</label>
+                <input type="range" id="hdri-op" min="0" max="100" value="50">
+                <span id="v-hdri-op">50%</span>
+            </div>
+            <div class="row">
+                <label>Scale:</label>
+                <input type="range" id="hdri-scale" min="50" max="200" value="100">
+                <span id="v-hdri-scale">1.0x</span>
+            </div>
+        </div>
+
         <div class="group">
             <div style="display:flex; gap:5px;">
                 <div class="btn active" id="style-inner">Inner</div>
@@ -40,16 +54,16 @@
         </div>
 
         <div class="group">
-            <strong>Shading</strong>
+            <strong>Giroscop</strong>
+            <div class="btn" id="toggle-alt-gyro" style="background:#ffcc00">Altitudine Dinamică: OFF</div>
+            <div class="btn" id="activate-sensors" style="background:#00ffcc">Senzori: OFF</div>
             <div class="row"><label>Angle:</label><input type="range" id="angle" min="0" max="360" value="214"><span id="v-angle">214°</span></div>
             <div class="row"><label>Altitude:</label><input type="range" id="altitude" min="0" max="90" value="10"><span id="v-altitude">10°</span></div>
-            <div class="btn" id="toggle-alt-gyro" style="background:#ffcc00">Altitude Dynamic: OFF</div>
-            <div class="btn" id="activate-sensors" style="background:#00ffcc">Gyroscope: OFF</div>
         </div>
 
         <div class="group">
-            <strong>Highlights & Shadows</strong>
-            <div class="row"><label>Highlight Op:</label><input type="range" id="h-op" min="0" max="100" value="75"><span id="v-h-op">75%</span></div>
+            <strong>Bevel Opacity</strong>
+            <div class="row"><label>High Op:</label><input type="range" id="h-op" min="0" max="100" value="75"><span id="v-h-op">75%</span></div>
             <div class="row"><label>Shadow Op:</label><input type="range" id="s-op" min="0" max="100" value="9"><span id="v-s-op">9%</span></div>
         </div>
     </div>
@@ -57,6 +71,12 @@
     <div class="viewport">
         <svg id="coin-svg" viewBox="0 0 1080 2280">
             <defs>
+                <!-- MASCA PENTRU REFLEXIE (Cerc centrat pe moneda) -->
+                <clipPath id="coin-mask">
+                    <circle cx="494" cy="1180" r="300" />
+                </clipPath>
+
+                <!-- FILTRU LUMINĂ -->
                 <filter id="f-light" x="-20%" y="-20%" width="140%" height="140%">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
                     <feGaussianBlur in="m" id="l-blur" stdDeviation="2.5" result="b" />
@@ -65,6 +85,8 @@
                     </feSpecularLighting>
                     <feComposite in2="m" id="h-mask" operator="in" />
                 </filter>
+
+                <!-- FILTRU UMBRĂ -->
                 <filter id="f-shadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
                     <feGaussianBlur in="m" id="s-blur" stdDeviation="2.5" result="b" />
@@ -74,7 +96,17 @@
                     <feComposite in2="m" id="s-mask" operator="in" />
                 </filter>
             </defs>
+
+            <!-- 1. Baza monedei -->
             <image href="diffuse.png" width="1080" height="2280" />
+
+            <!-- 2. REFLEXIA HDRI (Sub mască circulară) -->
+            <g clip-path="url(#coin-mask)">
+                <image id="hdri-layer" href="hdri.jpg" x="0" y="0" width="1024" height="1024" 
+                       style="mix-blend-mode: plus-lighter; opacity: 0.5; transform-origin: center;" />
+            </g>
+
+            <!-- 3. Straturile de Relief -->
             <image id="shadow-layer" href="height-map-coin.png" width="1080" height="2280" filter="url(#f-shadow)" style="mix-blend-mode: multiply; opacity: 0.09;" />
             <image id="light-layer" href="height-map-coin.png" width="1080" height="2280" filter="url(#f-light)" style="mix-blend-mode: plus-lighter; opacity: 0.75;" />
         </svg>
@@ -85,14 +117,9 @@
         let gyroActive = false;
         let altitudeDynamic = false;
 
+        const hdri = document.getElementById('hdri-layer');
         const hDir = document.getElementById('h-dir');
         const sDir = document.getElementById('s-dir');
-        const specNode = document.getElementById('spec-node');
-        const diffNode = document.getElementById('diff-node');
-        const lBlur = document.getElementById('l-blur');
-        const sBlur = document.getElementById('s-blur');
-        const lightLayer = document.getElementById('light-layer');
-        const shadowLayer = document.getElementById('shadow-layer');
 
         function update() {
             const depth = document.getElementById('depth').value;
@@ -101,30 +128,37 @@
             const altitude = document.getElementById('altitude').value;
             const hOp = document.getElementById('h-op').value / 100;
             const sOp = document.getElementById('s-op').value / 100;
+            const hdriOp = document.getElementById('hdri-op').value / 100;
+            const hdriScale = document.getElementById('hdri-scale').value / 100;
 
-            // Update Labels
+            // Labels
             document.getElementById('v-depth').innerText = depth + "%";
             document.getElementById('v-size').innerText = size + "px";
             document.getElementById('v-angle').innerText = angle + "°";
             document.getElementById('v-altitude').innerText = altitude + "°";
             document.getElementById('v-h-op').innerText = Math.round(hOp * 100) + "%";
             document.getElementById('v-s-op').innerText = Math.round(sOp * 100) + "%";
+            document.getElementById('v-hdri-op').innerText = Math.round(hdriOp * 100) + "%";
+            document.getElementById('v-hdri-scale').innerText = hdriScale.toFixed(1) + "x";
 
-            // Update SVG direct
+            // SVG Bevel
             const surfaceScale = (depth / 100) * 25;
-            specNode.setAttribute('surfaceScale', surfaceScale);
-            diffNode.setAttribute('surfaceScale', surfaceScale);
-            lBlur.setAttribute('stdDeviation', size / 4);
-            sBlur.setAttribute('stdDeviation', size / 4);
+            document.getElementById('spec-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('diff-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('l-blur').setAttribute('stdDeviation', size / 4);
+            document.getElementById('s-blur').setAttribute('stdDeviation', size / 4);
 
             hDir.setAttribute('azimuth', angle);
             hDir.setAttribute('elevation', altitude);
             sDir.setAttribute('azimuth', angle);
             sDir.setAttribute('elevation', altitude);
 
-            lightLayer.style.opacity = hOp;
-            shadowLayer.style.opacity = sOp;
+            // Blending & Opacity
+            document.getElementById('light-layer').style.opacity = hOp;
+            document.getElementById('shadow-layer').style.opacity = sOp;
+            hdri.style.opacity = hdriOp;
 
+            // Inner/Outer
             const op = (currentStyle === 'inner') ? 'in' : 'out';
             document.getElementById('h-mask').setAttribute('operator', op);
             document.getElementById('s-mask').setAttribute('operator', op);
@@ -133,54 +167,56 @@
         function handleOrientation(event) {
             if (!gyroActive) return;
             
-            let beta = event.beta || 0; 
-            let gamma = event.gamma || 0;
+            let beta = event.beta || 0;  // front/back
+            let gamma = event.gamma || 0; // left/right
 
-            // Calcul unghi direct (fără smoothing)
+            // 1. MIŞCARE BEVEL (Urmează înclinația)
             let angleRad = Math.atan2(beta, -gamma);
             let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
-            
-            // Setăm valorile sliderelor direct
             document.getElementById('angle').value = Math.round(angleDeg);
 
             if (altitudeDynamic) {
                 let tilt = Math.sqrt(beta * beta + gamma * gamma);
-                let finalAlt = Math.max(5, Math.min(85, 90 - tilt));
-                document.getElementById('altitude').value = Math.round(finalAlt);
+                document.getElementById('altitude').value = Math.round(Math.max(5, Math.min(85, 90 - tilt)));
             }
 
-            // Aplicăm instantaneu
+            // 2. MIŞCARE HDRI (Opusă înclinației)
+            // Centrul monedei este aprox la x=494, y=1180. HDRI are 1024x1024.
+            // Translatăm în sens invers senzorilor
+            let moveX = (gamma * -3) + (494 - 512); 
+            let moveY = (beta * -3) + (1180 - 512);
+            let scale = document.getElementById('hdri-scale').value / 100;
+            
+            hdri.setAttribute('transform', `translate(${moveX}, ${moveY}) scale(${scale})`);
+
             update();
         }
 
-        // Listeners pentru slidere
+        // Listeners
         document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
-
-        // Style Toggles
         document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); update(); };
         document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); update(); };
-        document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
+        document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitudine Dinamică: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
         
         // Senzori
         document.getElementById('activate-sensors').onclick = () => document.getElementById('gyro-overlay').style.display = 'flex';
         document.getElementById('start-gyro-btn').onclick = async () => {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                const response = await DeviceOrientationEvent.requestPermission();
-                if (response === 'granted') {
+                const res = await DeviceOrientationEvent.requestPermission();
+                if (res === 'granted') {
                     window.addEventListener('deviceorientation', handleOrientation);
                     gyroActive = true;
                     document.getElementById('gyro-overlay').style.display = 'none';
-                    document.getElementById('activate-sensors').innerText = "Gyroscope: ON";
+                    document.getElementById('activate-sensors').innerText = "Senzori: ON";
                 }
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
                 gyroActive = true;
                 document.getElementById('gyro-overlay').style.display = 'none';
-                document.getElementById('activate-sensors').innerText = "Gyroscope: ON";
+                document.getElementById('activate-sensors').innerText = "Senzori: ON";
             }
         };
 
-        // Inițializare
         update();
     </script>
 </body>
