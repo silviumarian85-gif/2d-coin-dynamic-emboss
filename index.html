@@ -3,39 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - Pro Configurator & Gyro</title>
+    <title>2D Coin - Smooth Gyro Engine</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        
-        /* Panou Control Photoshop Style */
-        #ui-panel {
-            width: 280px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
+        #ui-panel { width: 280px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
         h3 { margin: 0 0 10px 0; background: #666; color: white; padding: 5px; border: 1px inset #eee; font-size: 12px; text-align: center; }
         .group { border: 1px solid #999; padding: 8px; margin-bottom: 10px; background: #e1e1e1; border-radius: 3px; }
-        .group-title { display: block; margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #ccc; text-transform: uppercase; font-size: 10px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; gap: 5px; }
         label { width: 95px; font-weight: bold; }
         input[type=range] { flex-grow: 1; cursor: pointer; }
         span { width: 35px; text-align: right; font-family: monospace; font-size: 10px; color: #0055ff; }
-        
-        /* Butoane Stil */
-        .btn-box { display: flex; gap: 5px; margin-bottom: 10px; }
-        .btn { flex: 1; padding: 6px; text-align: center; border: 1px solid #999; cursor: pointer; background: #eee; font-size: 10px; font-weight: bold; border-radius: 3px; }
-        .btn.active { background: #4a90e2; color: white; border-color: #2a60a0; }
-        .btn-gyro { background: #ffcc00; color: #000; border: 1px solid #996600; margin-top: 5px; }
-        .btn-gyro.active { background: #00ff00; }
-
-        /* Viewport */
-        .viewport { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #333; height: 100vh; position: relative; }
-        #coin-svg { height: 95vh; aspect-ratio: 1080 / 2280; display: block; background: #000; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-
-        /* Overlay Activare Senzori pentru Mobile */
-        #gyro-overlay {
-            position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.8); 
-            z-index: 5000; display: none; justify-content: center; align-items: center;
-        }
-        #start-gyro-btn { padding: 20px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; background: #00ffcc; }
+        .btn { flex: 1; padding: 6px; text-align: center; border: 1px solid #999; cursor: pointer; background: #eee; font-size: 10px; font-weight: bold; border-radius: 3px; margin-bottom: 5px; }
+        .btn.active { background: #4a90e2; color: white; }
+        .viewport { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #000; height: 100vh; position: relative; }
+        #coin-svg { height: 95vh; aspect-ratio: 1080 / 2280; display: block; }
+        #gyro-overlay { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; }
+        #start-gyro-btn { padding: 20px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; background: #00ffcc; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -46,92 +29,54 @@
 
     <div id="ui-panel">
         <h3>Bevel and Emboss</h3>
-        
         <div class="group">
-            <span class="group-title">Structure</span>
-            <div class="btn-box">
+            <div style="display:flex; gap:5px;">
                 <div class="btn active" id="style-inner">Inner</div>
                 <div class="btn" id="style-outer">Outer</div>
             </div>
-            <div class="row">
-                <label>Depth:</label>
-                <input type="range" id="depth" min="0" max="200" value="22">
-                <span id="v-depth">22%</span>
-            </div>
-            <div class="row">
-                <label>Size (Blur):</label>
-                <input type="range" id="size" min="0" max="100" value="10">
-                <span id="v-size">10px</span>
-            </div>
+            <div class="row"><label>Depth:</label><input type="range" id="depth" min="0" max="200" value="22"><span id="v-depth">22%</span></div>
+            <div class="row"><label>Size:</label><input type="range" id="size" min="0" max="100" value="10"><span id="v-size">10px</span></div>
         </div>
 
         <div class="group">
-            <span class="group-title">Shading</span>
-            <div class="row">
-                <label>Angle:</label>
-                <input type="range" id="angle" min="0" max="360" value="214">
-                <span id="v-angle">214°</span>
-            </div>
-            <div class="row">
-                <label>Altitude:</label>
-                <input type="range" id="altitude" min="0" max="90" value="10">
-                <span id="v-altitude">10°</span>
-            </div>
-            <div class="btn btn-gyro" id="toggle-alt-gyro">Altitude Dynamic: OFF</div>
-            <div class="btn btn-gyro" id="activate-sensors">Activate Gyroscope</div>
+            <strong>Shading</strong>
+            <div class="row"><label>Angle:</label><input type="range" id="angle" min="0" max="360" value="214"><span id="v-angle">214°</span></div>
+            <div class="row"><label>Altitude:</label><input type="range" id="altitude" min="0" max="90" value="10"><span id="v-altitude">10°</span></div>
+            <div class="btn" id="toggle-alt-gyro" style="background:#ffcc00">Altitude Dynamic: OFF</div>
+            <div class="btn" id="activate-sensors" style="background:#00ffcc">Gyroscope: OFF</div>
         </div>
 
         <div class="group">
-            <span class="group-title">Highlight (Add)</span>
-            <div class="row">
-                <input type="range" id="h-op" min="0" max="100" value="75">
-                <span id="v-h-op">75%</span>
-            </div>
+            <strong>Highlights & Shadows</strong>
+            <div class="row"><label>Highlight Op:</label><input type="range" id="h-op" min="0" max="100" value="75"><span id="v-h-op">75%</span></div>
+            <div class="row"><label>Shadow Op:</label><input type="range" id="s-op" min="0" max="100" value="9"><span id="v-s-op">9%</span></div>
         </div>
-
-        <div class="group">
-            <span class="group-title">Shadow (Multiply)</span>
-            <div class="row">
-                <input type="range" id="s-op" min="0" max="100" value="9">
-                <span id="v-s-op">9%</span>
-            </div>
-        </div>
+        <div style="font-size:9px; color:#666; text-align:center;">Angle: <span id="log-angle">0</span>° | Alt: <span id="log-alt">0</span>°</div>
     </div>
 
     <div class="viewport">
-        <svg id="coin-svg" viewBox="0 0 1080 2280" xmlns="http://www.w3.org/2000/svg">
+        <svg id="coin-svg" viewBox="0 0 1080 2280">
             <defs>
-                <!-- FILTRU LUMINĂ (Procesează HeightMap) -->
                 <filter id="f-light" x="-20%" y="-20%" width="140%" height="140%">
-                    <feColorMatrix type="luminanceToAlpha" result="alphaMap" />
-                    <feGaussianBlur in="alphaMap" id="l-blur" stdDeviation="2.5" result="blur" />
-                    <feSpecularLighting in="blur" id="spec-node" surfaceScale="5.5" specularConstant="1" specularExponent="20" lighting-color="#ffffff">
+                    <feColorMatrix type="luminanceToAlpha" result="m" />
+                    <feGaussianBlur in="m" id="l-blur" stdDeviation="2.5" result="b" />
+                    <feSpecularLighting in="b" id="spec-node" surfaceScale="5.5" specularExponent="20" lighting-color="white">
                         <feDistantLight id="h-dir" azimuth="214" elevation="10" />
                     </feSpecularLighting>
-                    <feComposite in2="alphaMap" id="h-mask" operator="in" />
+                    <feComposite in2="m" id="h-mask" operator="in" />
                 </filter>
-
-                <!-- FILTRU UMBRĂ (Procesează HeightMap) -->
                 <filter id="f-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feColorMatrix type="luminanceToAlpha" result="alphaMap" />
-                    <feGaussianBlur in="alphaMap" id="s-blur" stdDeviation="2.5" result="blur" />
-                    <feDiffuseLighting in="blur" id="diff-node" surfaceScale="5.5" diffuseConstant="1" lighting-color="#000000">
+                    <feColorMatrix type="luminanceToAlpha" result="m" />
+                    <feGaussianBlur in="m" id="s-blur" stdDeviation="2.5" result="b" />
+                    <feDiffuseLighting in="b" id="diff-node" surfaceScale="5.5" lighting-color="black">
                         <feDistantLight id="s-dir" azimuth="214" elevation="10" />
                     </feDiffuseLighting>
-                    <feComposite in2="alphaMap" id="s-mask" operator="in" />
+                    <feComposite in2="m" id="s-mask" operator="in" />
                 </filter>
             </defs>
-
-            <!-- 1. BASE: Moneda Color -->
-            <image href="diffuse.png" x="0" y="0" width="1080" height="2280" preserveAspectRatio="none" />
-
-            <!-- 2. EFFECT: Shadow Layer -->
-            <image id="shadow-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
-                   preserveAspectRatio="none" filter="url(#f-shadow)" style="mix-blend-mode: multiply; opacity: 0.09;" />
-
-            <!-- 3. EFFECT: Light Layer -->
-            <image id="light-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
-                   preserveAspectRatio="none" filter="url(#f-light)" style="mix-blend-mode: plus-lighter; opacity: 0.75;" />
+            <image href="diffuse.png" width="1080" height="2280" />
+            <image id="shadow-layer" href="height-map-coin.png" width="1080" height="2280" filter="url(#f-shadow)" style="mix-blend-mode: multiply; opacity: 0.09;" />
+            <image id="light-layer" href="height-map-coin.png" width="1080" height="2280" filter="url(#f-light)" style="mix-blend-mode: plus-lighter; opacity: 0.75;" />
         </svg>
     </div>
 
@@ -140,112 +85,110 @@
         let gyroActive = false;
         let altitudeDynamic = false;
 
+        // Parametrii pentru Smooth Movement
+        let state = {
+            angle: 214,
+            alt: 10,
+            targetAngle: 214,
+            targetAlt: 10
+        };
+
         const hDir = document.getElementById('h-dir');
         const sDir = document.getElementById('s-dir');
-        const specNode = document.getElementById('spec-node');
-        const diffNode = document.getElementById('diff-node');
-        const lBlur = document.getElementById('l-blur');
-        const sBlur = document.getElementById('s-blur');
-        const hLayer = document.getElementById('light-layer');
-        const sLayer = document.getElementById('shadow-layer');
 
-        const update = () => {
+        function update() {
             const depth = document.getElementById('depth').value;
             const size = document.getElementById('size').value;
-            const angle = document.getElementById('angle').value;
-            const altitude = document.getElementById('altitude').value;
             const hOp = document.getElementById('h-op').value / 100;
             const sOp = document.getElementById('s-op').value / 100;
 
-            // Update Labels
+            // Labels
             document.getElementById('v-depth').innerText = depth + "%";
             document.getElementById('v-size').innerText = size + "px";
-            document.getElementById('v-angle').innerText = angle + "°";
-            document.getElementById('v-altitude').innerText = altitude + "°";
             document.getElementById('v-h-op').innerText = Math.round(hOp * 100) + "%";
             document.getElementById('v-s-op').innerText = Math.round(sOp * 100) + "%";
 
-            // Mapare valori la SVG
-            const surfaceScale = (depth / 100) * 25; // 100% = 25 units
-            const blurVal = size / 4;
+            // Smoothing pentru unghi (shortest path logic)
+            let angleDiff = state.targetAngle - state.angle;
+            if (angleDiff > 180) angleDiff -= 360;
+            if (angleDiff < -180) angleDiff += 360;
+            state.angle += angleDiff * 0.1; // 0.1 este viteza de raspuns (lerp)
 
-            specNode.setAttribute('surfaceScale', surfaceScale);
-            diffNode.setAttribute('surfaceScale', surfaceScale);
-            lBlur.setAttribute('stdDeviation', blurVal);
-            sBlur.setAttribute('stdDeviation', blurVal);
+            // Smoothing pentru altitudine
+            state.alt += (state.targetAlt - state.alt) * 0.1;
 
-            // Shading
-            hDir.setAttribute('azimuth', angle);
-            hDir.setAttribute('elevation', altitude);
-            sDir.setAttribute('azimuth', angle);
-            sDir.setAttribute('elevation', altitude);
+            // Update SVG
+            const surfaceScale = (depth / 100) * 25;
+            document.getElementById('spec-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('diff-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('l-blur').setAttribute('stdDeviation', size / 4);
+            document.getElementById('s-blur').setAttribute('stdDeviation', size / 4);
 
-            // Opacity
-            hLayer.style.opacity = hOp;
-            sLayer.style.opacity = sOp;
+            hDir.setAttribute('azimuth', state.angle);
+            hDir.setAttribute('elevation', state.alt);
+            sDir.setAttribute('azimuth', state.angle);
+            sDir.setAttribute('elevation', state.alt);
 
-            // Inner / Outer Switch
+            document.getElementById('light-layer').style.opacity = hOp;
+            document.getElementById('shadow-layer').style.opacity = sOp;
+            
+            document.getElementById('v-angle').innerText = Math.round(state.angle) + "°";
+            document.getElementById('v-altitude').innerText = Math.round(state.alt) + "°";
+            document.getElementById('log-angle').innerText = Math.round(state.angle);
+            document.getElementById('log-alt').innerText = Math.round(state.alt);
+
             const op = (currentStyle === 'inner') ? 'in' : 'out';
             document.getElementById('h-mask').setAttribute('operator', op);
             document.getElementById('s-mask').setAttribute('operator', op);
-        };
 
-        // Giroscop Handler
-        function handleOrientation(event) {
-            if (!gyroActive) return;
-            
-            let beta = event.beta || 0;  // Front/Back
-            let gamma = event.gamma || 0; // Left/Right
-
-            // Calcul unghi (Directie)
-            let angleRad = Math.atan2(beta, -gamma);
-            let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
-            
-            document.getElementById('angle').value = Math.round(angleDeg);
-
-            // Calcul Altitudine (doar daca e activ dynamic)
-            if (altitudeDynamic) {
-                let tilt = Math.sqrt(beta * beta + gamma * gamma);
-                let finalAlt = Math.max(5, Math.min(85, 90 - tilt));
-                document.getElementById('altitude').value = Math.round(finalAlt);
-            }
-
-            update();
+            requestAnimationFrame(update);
         }
 
-        // Event Listeners
-        document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); update(); };
-        document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); update(); };
-        
-        document.getElementById('toggle-alt-gyro').onclick = (e) => {
-            altitudeDynamic = !altitudeDynamic;
-            e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF");
-            e.target.classList.toggle('active');
-        };
+        function handleOrientation(event) {
+            if (!gyroActive) return;
+            let beta = event.beta || 0; 
+            let gamma = event.gamma || 0;
 
-        document.getElementById('activate-sensors').onclick = () => {
-            document.getElementById('gyro-overlay').style.display = 'flex';
-        };
+            // Calculam tinta pentru unghi (Direction)
+            let angleRad = Math.atan2(beta, -gamma);
+            state.targetAngle = (angleRad * (180 / Math.PI) + 360) % 360;
 
+            // Calculam tinta pentru altitudine
+            if (altitudeDynamic) {
+                let tilt = Math.sqrt(beta * beta + gamma * gamma);
+                state.targetAlt = Math.max(5, Math.min(85, 90 - tilt));
+            } else {
+                state.targetAlt = document.getElementById('altitude').value;
+            }
+        }
+
+        // Sliderele updateaza doar tintele
+        document.getElementById('angle').oninput = (e) => state.targetAngle = parseFloat(e.target.value);
+        document.getElementById('altitude').oninput = (e) => state.targetAlt = parseFloat(e.target.value);
+
+        // UI Listeners
+        document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); };
+        document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); };
+        document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
+        document.getElementById('activate-sensors').onclick = () => document.getElementById('gyro-overlay').style.display = 'flex';
         document.getElementById('start-gyro-btn').onclick = async () => {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const response = await DeviceOrientationEvent.requestPermission();
-                if (response === 'granted') startGyro();
+                if (response === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    gyroActive = true;
+                    document.getElementById('gyro-overlay').style.display = 'none';
+                    document.getElementById('activate-sensors').innerText = "Gyroscope: ON";
+                }
             } else {
-                startGyro();
+                window.addEventListener('deviceorientation', handleOrientation);
+                gyroActive = true;
+                document.getElementById('gyro-overlay').style.display = 'none';
+                document.getElementById('activate-sensors').innerText = "Gyroscope: ON";
             }
         };
 
-        function startGyro() {
-            window.addEventListener('deviceorientation', handleOrientation);
-            gyroActive = true;
-            document.getElementById('gyro-overlay').style.display = 'none';
-            document.getElementById('activate-sensors').innerText = "Gyroscope: ACTIVE";
-            document.getElementById('activate-sensors').classList.add('active');
-        }
-
-        document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
-        window.onload = update;
+        requestAnimationFrame(update);
     </script>
 </body>
 </html>
