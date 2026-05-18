@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - High Sensitivity HDRI Engine</title>
+    <title>2D Coin - Pro HDRI Engine Fixed</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
         #ui-panel { width: 290px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
@@ -25,7 +25,7 @@
 <body>
 
     <div id="gyro-overlay">
-        <button id="start-gyro-btn">START REFLECTIONS</button>
+        <button id="start-gyro-btn">ACTIVEAZĂ REFLEXIILE</button>
     </div>
 
     <div id="ui-panel">
@@ -49,11 +49,6 @@
                 <span id="v-hdri-ct">100%</span>
             </div>
             <div class="row">
-                <label>Rotate:</label>
-                <input type="range" id="hdri-rot" min="0" max="360" value="0">
-                <span id="v-hdri-rot">0°</span>
-            </div>
-            <div class="row">
                 <label>Manual X:</label>
                 <input type="range" id="hdri-x" min="-1000" max="1000" value="0">
                 <span id="v-hdri-x">0</span>
@@ -62,6 +57,11 @@
                 <label>Manual Y:</label>
                 <input type="range" id="hdri-y" min="-1000" max="1000" value="0">
                 <span id="v-hdri-y">0</span>
+            </div>
+            <div class="row">
+                <label>Rotate:</label>
+                <input type="range" id="hdri-rot" min="0" max="360" value="0">
+                <span id="v-hdri-rot">0°</span>
             </div>
         </div>
 
@@ -78,7 +78,7 @@
         <div class="group">
             <strong>Giroscop</strong>
             <div class="btn" id="toggle-alt-gyro" style="background:#ffcc00; margin-top:5px">Altitude Dynamic: OFF</div>
-            <div class="btn" id="activate-sensors" style="background:#00ffcc">Activate Sensors</div>
+            <div class="btn" id="activate-sensors" style="background:#00ffcc">Senzori: OFF</div>
             <div class="row"><label>Angle:</label><input type="range" id="angle" min="0" max="360" value="214"><span id="v-angle">214°</span></div>
             <div class="row"><label>Altitude:</label><input type="range" id="altitude" min="0" max="90" value="10"><span id="v-altitude">10°</span></div>
         </div>
@@ -94,19 +94,14 @@
     <div class="viewport">
         <svg id="coin-svg" viewBox="0 0 1080 2280">
             <defs>
-                <!-- MASCA MONEDA -->
+                <!-- MASCA MONEDA FIXA 301px -->
                 <clipPath id="coin-mask">
                     <circle cx="494" cy="1180" r="150.5" />
                 </clipPath>
 
-                <!-- TILING PATTERN PENTRU HDRI -->
-                <pattern id="hdri-pattern" patternUnits="userSpaceOnUse" width="1024" height="1024">
-                    <image id="hdri-img-src" href="hdri.jpg" x="0" y="0" width="1024" height="1024" />
-                </pattern>
-
                 <filter id="f-light">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
-                    <feGaussianBlur in="m" stdDeviation="2.5" />
+                    <feGaussianBlur in="m" id="l-blur" stdDeviation="2.5" />
                     <feSpecularLighting surfaceScale="5.5" specularExponent="20" lighting-color="white">
                         <feDistantLight id="h-dir" azimuth="214" elevation="10" />
                     </feSpecularLighting>
@@ -115,7 +110,7 @@
 
                 <filter id="f-shadow">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
-                    <feGaussianBlur in="m" stdDeviation="2.5" />
+                    <feGaussianBlur in="m" id="s-blur" stdDeviation="2.5" />
                     <feDiffuseLighting surfaceScale="5.5" lighting-color="black">
                         <feDistantLight id="s-dir" azimuth="214" elevation="10" />
                     </feDiffuseLighting>
@@ -126,11 +121,20 @@
             <!-- 1. Baza -->
             <image href="diffuse.png" width="1080" height="2280" />
 
-            <!-- 2. REFLEXIA HDRI REPETATA (TILING) -->
+            <!-- 2. REFLEXIA HDRI (Grup pentru miscare) -->
             <g clip-path="url(#coin-mask)">
-                <!-- Rect-ul este mare pentru a acoperi orice miscare, pattern-ul se repeta in el -->
-                <rect id="hdri-rect" x="-2000" y="-2000" width="5000" height="5000" fill="url(#hdri-pattern)" 
-                      style="mix-blend-mode: plus-lighter; opacity: 0.5;" />
+                <g id="hdri-container">
+                    <!-- Folosim un careu de imagini pentru a simula tiling (repetitie) -->
+                    <image class="hdri-tile" href="hdri.jpg" x="-1024" y="-1024" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="0" y="-1024" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="1024" y="-1024" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="-1024" y="0" width="1024" height="1024" />
+                    <image id="hdri-main" class="hdri-tile" href="hdri.jpg" x="0" y="0" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="1024" y="0" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="-1024" y="1024" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="0" y="1024" width="1024" height="1024" />
+                    <image class="hdri-tile" href="hdri.jpg" x="1024" y="1024" width="1024" height="1024" />
+                </g>
             </g>
 
             <!-- 3. Bevel Layers -->
@@ -145,9 +149,8 @@
         let altitudeDynamic = false;
         let lastGyro = { beta: 0, gamma: 0 };
 
-        const hdriRect = document.getElementById('hdri-rect');
-        const hdriPattern = document.getElementById('hdri-pattern');
-        const hdriImg = document.getElementById('hdri-img-src');
+        const hdriContainer = document.getElementById('hdri-container');
+        const hdriTiles = document.querySelectorAll('.hdri-tile');
         const hDir = document.getElementById('h-dir');
         const sDir = document.getElementById('s-dir');
 
@@ -167,7 +170,7 @@
             const hdriManualX = parseFloat(document.getElementById('hdri-x').value);
             const hdriManualY = parseFloat(document.getElementById('hdri-y').value);
 
-            // Labels
+            // Update Labels
             document.getElementById('v-depth').innerText = depth + "%";
             document.getElementById('v-size').innerText = size + "px";
             document.getElementById('v-angle').innerText = angle + "°";
@@ -180,7 +183,7 @@
             document.getElementById('v-hdri-rot').innerText = hdriRot + "°";
             document.getElementById('v-hdri-op').innerText = Math.round(hdriOp * 100) + "%";
 
-            // SVG Bevel
+            // Bevel Params
             const surfaceScale = (depth / 100) * 25;
             document.getElementById('f-light').querySelector('feSpecularLighting').setAttribute('surfaceScale', surfaceScale);
             document.getElementById('f-shadow').querySelector('feDiffuseLighting').setAttribute('surfaceScale', surfaceScale);
@@ -191,25 +194,38 @@
             sDir.setAttribute('azimuth', angle);
             sDir.setAttribute('elevation', altitude);
 
+            // Layer Visibility
+            document.getElementById('light-layer').style.opacity = hOp;
+            document.getElementById('shadow-layer').style.opacity = sOp;
+            
             // HDRI Appearance
-            hdriRect.style.opacity = hdriOp;
-            hdriImg.style.filter = `brightness(${hdriBr}%) contrast(${hdriCt}%)`;
+            hdriContainer.style.mixBlendMode = "plus-lighter";
+            hdriContainer.style.opacity = hdriOp;
+            hdriContainer.style.filter = `brightness(${hdriBr}%) contrast(${hdriCt}%)`;
 
-            // HDRI Tiling and Scale
-            const patternSize = 1024 * hdriSc;
-            hdriPattern.setAttribute('width', patternSize);
-            hdriPattern.setAttribute('height', patternSize);
-            hdriImg.setAttribute('width', patternSize);
-            hdriImg.setAttribute('height', patternSize);
-
-            // HDRI Movement (High Sensitivity: Multiplier -12)
+            // HDRI Tiling Movement (Sensitivity -12)
+            // Calculăm poziția relativă la centrul monedei (494, 1180)
+            const baseSize = 1024 * hdriSc;
             let gyroX = lastGyro.gamma * -12; 
             let gyroY = lastGyro.beta * -12;
-            let finalX = 494 - (patternSize/2) + gyroX + hdriManualX;
-            let finalY = 1180 - (patternSize/2) + gyroY + hdriManualY;
             
-            // Aplicam rotatia si translatia pe pattern
-            hdriPattern.setAttribute('patternTransform', `translate(${finalX}, ${finalY}) rotate(${hdriRot}, ${patternSize/2}, ${patternSize/2})`);
+            // Aplicăm transformarea pe întreg containerul HDRI
+            let finalX = 494 - (baseSize / 2) + gyroX + hdriManualX;
+            let finalY = 1180 - (baseSize / 2) + gyroY + hdriManualY;
+
+            // Update tiles sizes and positions
+            hdriTiles.forEach((tile, i) => {
+                tile.setAttribute('width', baseSize);
+                tile.setAttribute('height', baseSize);
+                // Repoziționăm tile-urile pentru a forma careul 3x3 corect în funcție de scale
+                const col = i % 3 - 1; // -1, 0, 1
+                const row = Math.floor(i / 3) - 1; // -1, 0, 1
+                tile.setAttribute('x', col * baseSize);
+                tile.setAttribute('y', row * baseSize);
+            });
+
+            // Mișcare și rotație finală
+            hdriContainer.setAttribute('transform', `translate(${finalX}, ${finalY}) rotate(${hdriRot}, ${baseSize/2}, ${baseSize/2})`);
 
             // Inner/Outer
             const op = (currentStyle === 'inner') ? 'in' : 'out';
@@ -222,6 +238,7 @@
             lastGyro.beta = event.beta || 0;
             lastGyro.gamma = event.gamma || 0;
 
+            // Update unghi Bevel
             let angleRad = Math.atan2(lastGyro.beta, -lastGyro.gamma);
             let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
             document.getElementById('angle').value = Math.round(angleDeg);
@@ -230,13 +247,18 @@
                 let tilt = Math.sqrt(lastGyro.beta**2 + lastGyro.gamma**2);
                 document.getElementById('altitude').value = Math.round(Math.max(5, Math.min(85, 90 - tilt)));
             }
-            update();
+            update(); // Forțăm redesenarea la fiecare mișcare de senzor
         }
 
+        // Slidere
         document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
+        
+        // Butoane Interfață
         document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); update(); };
         document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); update(); };
         document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
+        
+        // Activare Senzori
         document.getElementById('activate-sensors').onclick = () => document.getElementById('gyro-overlay').style.display = 'flex';
         document.getElementById('start-gyro-btn').onclick = async () => {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
