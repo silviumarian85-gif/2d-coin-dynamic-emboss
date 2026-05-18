@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Coin - Black Isolation Engine</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Panou Control */
+        #ui-panel {
+            width: 280px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 100; font-size: 11px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        h3 { margin: 0 0 10px 0; background: #666; color: white; padding: 5px; border: 1px inset #eee; font-size: 12px; text-align: center; }
+        .group { border: 1px solid #999; padding: 8px; margin-bottom: 10px; background: #e1e1e1; border-radius: 3px; }
+        .group-title { display: block; margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #ccc; text-transform: uppercase; font-size: 10px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; gap: 5px; }
+        label { width: 90px; }
+        input[type=range] { flex-grow: 1; cursor: pointer; }
+        span { width: 35px; text-align: right; font-family: monospace; }
+        select, input[type=color] { font-size: 10px; padding: 2px; }
+
+        .style-box { display: flex; gap: 5px; flex-grow: 1; }
+        .style-btn { flex: 1; padding: 4px; text-align: center; border: 1px solid #999; cursor: pointer; background: #eee; font-size: 10px; }
+        .style-btn.active { background: #4a90e2; color: white; border-color: #2a60a0; font-weight: bold; }
+
+        .viewport { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #333; height: 100vh; }
+        
+        #coin-svg {
+            height: 95vh;
+            aspect-ratio: 1080 / 2280;
+            display: block;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-panel">
+        <h3>Bevel and Emboss</h3>
+        
+        <div class="group">
+            <span class="group-title">Structure</span>
+            <div class="row">
+                <label>Style:</label>
+                <div class="style-box">
+                    <div class="style-btn active" id="btn-inner">Inner</div>
+                    <div class="style-btn" id="btn-outer">Outer</div>
+                </div>
+            </div>
+            <div class="row">
+                <label>Depth:</label>
+                <input type="range" id="depth" min="0" max="200" value="80">
+                <span id="v-depth">80%</span>
+            </div>
+            <div class="row">
+                <label>Size (Blur):</label>
+                <input type="range" id="size" min="0" max="100" value="10">
+                <span id="v-size">10px</span>
+            </div>
+        </div>
+
+        <div class="group">
+            <span class="group-title">Shading</span>
+            <div class="row">
+                <label>Angle:</label>
+                <input type="range" id="angle" min="0" max="360" value="135">
+                <span id="v-angle">135°</span>
+            </div>
+            <div class="row">
+                <label>Altitude:</label>
+                <input type="range" id="altitude" min="10" max="90" value="45">
+                <span id="v-altitude">45°</span>
+            </div>
+        </div>
+
+        <div class="group">
+            <span class="group-title">Highlight (Add)</span>
+            <div class="row">
+                <input type="color" id="h-color" value="#ffffff">
+                <input type="range" id="h-op" min="0" max="100" value="80">
+                <span id="v-h-op">80%</span>
+            </div>
+        </div>
+
+        <div class="group">
+            <span class="group-title">Shadow (Multiply)</span>
+            <div class="row">
+                <input type="color" id="s-color" value="#000000">
+                <input type="range" id="s-op" min="0" max="100" value="80">
+                <span id="v-s-op">80%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="viewport">
+        <svg id="coin-svg" viewBox="0 0 1080 2280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- FILTRU LUMINĂ (Highlight) -->
+                <filter id="f-light" x="-20%" y="-20%" width="140%" height="140%">
+                    <!-- PAS 1: Izolăm negrul. Orice e negru în height-map devine transparent. -->
+                    <feColorMatrix type="luminanceToAlpha" result="strictMask" />
+                    <!-- Curățăm masca pentru a fi siguri că negrul e 0 -->
+                    <feComponentTransfer in="strictMask" result="cleanMask">
+                        <feFuncA type="linear" slope="2" intercept="-0.1" /> 
+                    </feComponentTransfer>
+                    
+                    <feGaussianBlur in="cleanMask" id="l-blur" stdDeviation="2" result="blur" />
+                    <feSpecularLighting in="blur" id="spec-node" surfaceScale="10" specularConstant="1" specularExponent="20" lighting-color="#ffffff" result="light">
+                        <feDistantLight id="h-dir" azimuth="135" elevation="45" />
+                    </feSpecularLighting>
+                    
+                    <!-- PAS 2: Tăiem lumina să apară DOAR pe zonele non-negre -->
+                    <feComposite in="light" in2="cleanMask" id="h-mask-node" operator="in" />
+                </filter>
+
+                <!-- FILTRU UMBRĂ (Shadow) -->
+                <filter id="f-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feColorMatrix type="luminanceToAlpha" result="strictMask" />
+                    <feComponentTransfer in="strictMask" result="cleanMask">
+                        <feFuncA type="linear" slope="2" intercept="-0.1" />
+                    </feComponentTransfer>
+                    
+                    <feGaussianBlur in="cleanMask" id="s-blur" stdDeviation="2" result="blur" />
+                    <feDiffuseLighting in="blur" id="diff-node" surfaceScale="10" diffuseConstant="1" lighting-color="#000000" result="shade">
+                        <feDistantLight id="s-dir" azimuth="135" elevation="45" />
+                    </feDiffuseLighting>
+                    
+                    <!-- PAS 2: Tăiem umbra să apară DOAR pe zonele non-negre -->
+                    <feComposite in="shade" in2="cleanMask" id="s-mask-node" operator="in" />
+                </filter>
+            </defs>
+
+            <!-- 1. IMAGINEA BAZĂ (Moneda Color) -->
+            <image href="diffuse.png" x="0" y="0" width="1080" height="2280" preserveAspectRatio="none" />
+
+            <!-- 2. STRATUL UMBRĂ (Multiply) -->
+            <!-- Se aplică folosind height-map ca sursă de relief -->
+            <image id="shadow-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
+                   preserveAspectRatio="none" filter="url(#f-shadow)" style="mix-blend-mode: multiply;" />
+
+            <!-- 3. STRATUL LUMINĂ (Add) -->
+            <image id="light-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
+                   preserveAspectRatio="none" filter="url(#f-light)" style="mix-blend-mode: plus-lighter;" />
+        </svg>
+    </div>
+
+    <script>
+        let currentStyle = 'inner';
+
+        const update = () => {
+            const depth = document.getElementById('depth').value;
+            const size = document.getElementById('size').value;
+            const angle = document.getElementById('angle').value;
+            const altitude = document.getElementById('altitude').value;
+            const hColor = document.getElementById('h-color').value;
+            const sColor = document.getElementById('s-color').value;
+            const hOp = document.getElementById('h-op').value / 100;
+            const sOp = document.getElementById('s-op').value / 100;
+
+            // Update Labels
+            document.getElementById('v-depth').innerText = depth + "%";
+            document.getElementById('v-size').innerText = size + "px";
+            document.getElementById('v-angle').innerText = angle + "°";
+            document.getElementById('v-altitude').innerText = altitude + "°";
+            document.getElementById('v-h-op').innerText = Math.round(hOp * 100) + "%";
+            document.getElementById('v-s-op').innerText = Math.round(sOp * 100) + "%";
+
+            // Filter Params
+            const surfaceScale = depth / 4;
+            const blurVal = Math.max(0.1, size / 4);
+
+            // Update Light
+            document.getElementById('spec-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('l-blur').setAttribute('stdDeviation', blurVal);
+            document.getElementById('h-dir').setAttribute('azimuth', angle);
+            document.getElementById('h-dir').setAttribute('elevation', altitude);
+            document.getElementById('spec-node').setAttribute('lighting-color', hColor);
+
+            // Update Shadow
+            document.getElementById('diff-node').setAttribute('surfaceScale', surfaceScale);
+            document.getElementById('s-blur').setAttribute('stdDeviation', blurVal);
+            document.getElementById('s-dir').setAttribute('azimuth', angle);
+            document.getElementById('s-dir').setAttribute('elevation', altitude);
+            document.getElementById('diff-node').setAttribute('lighting-color', sColor);
+
+            // Inner / Outer Logic
+            const operator = (currentStyle === 'inner') ? 'in' : 'out';
+            document.getElementById('h-mask-node').setAttribute('operator', operator);
+            document.getElementById('s-mask-node').setAttribute('operator', operator);
+
+            // Opacity
+            document.getElementById('light-layer').style.opacity = hOp;
+            document.getElementById('shadow-layer').style.opacity = sOp;
+        };
+
+        document.getElementById('btn-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('btn-outer').classList.remove('active'); update(); };
+        document.getElementById('btn-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('btn-inner').classList.remove('active'); update(); };
+        
+        document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
+        window.onload = update;
+    </script>
+</body>
+</html>
