@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - Advanced HDRI Engine</title>
+    <title>2D Coin - High Sensitivity HDRI Engine</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
         #ui-panel { width: 290px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
@@ -13,7 +13,7 @@
         .row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; gap: 5px; }
         label { width: 95px; font-weight: bold; }
         input[type=range] { flex-grow: 1; cursor: pointer; }
-        span { width: 40px; text-align: right; font-family: monospace; font-size: 10px; color: #0055ff; }
+        span { width: 45px; text-align: right; font-family: monospace; font-size: 10px; color: #0055ff; }
         .btn { flex: 1; padding: 6px; text-align: center; border: 1px solid #999; cursor: pointer; background: #eee; font-size: 10px; font-weight: bold; border-radius: 3px; }
         .btn.active { background: #4a90e2; color: white; }
         .viewport { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #000; height: 100vh; position: relative; }
@@ -25,15 +25,19 @@
 <body>
 
     <div id="gyro-overlay">
-        <button id="start-gyro-btn">START HDRI ENGINE</button>
+        <button id="start-gyro-btn">START REFLECTIONS</button>
     </div>
 
     <div id="ui-panel">
-        <h3>Layer Style</h3>
+        <h3>Layer Style Pro</h3>
         
-        <!-- GRUP NOU: HDRI TUNING -->
         <div class="group">
             <span class="group-title">HDRI Refl. Tuning</span>
+            <div class="row">
+                <label>Scale:</label>
+                <input type="range" id="hdri-sc" min="10" max="300" value="100">
+                <span id="v-hdri-sc">100%</span>
+            </div>
             <div class="row">
                 <label>Brightness:</label>
                 <input type="range" id="hdri-br" min="0" max="300" value="100">
@@ -45,24 +49,24 @@
                 <span id="v-hdri-ct">100%</span>
             </div>
             <div class="row">
-                <label>Pos X:</label>
-                <input type="range" id="hdri-x" min="-500" max="500" value="0">
-                <span id="v-hdri-x">0</span>
-            </div>
-            <div class="row">
-                <label>Pos Y:</label>
-                <input type="range" id="hdri-y" min="-500" max="500" value="0">
-                <span id="v-hdri-y">0</span>
-            </div>
-            <div class="row">
                 <label>Rotate:</label>
                 <input type="range" id="hdri-rot" min="0" max="360" value="0">
                 <span id="v-hdri-rot">0°</span>
             </div>
+            <div class="row">
+                <label>Manual X:</label>
+                <input type="range" id="hdri-x" min="-1000" max="1000" value="0">
+                <span id="v-hdri-x">0</span>
+            </div>
+            <div class="row">
+                <label>Manual Y:</label>
+                <input type="range" id="hdri-y" min="-1000" max="1000" value="0">
+                <span id="v-hdri-y">0</span>
+            </div>
         </div>
 
         <div class="group">
-            <span class="group-title">Structure</span>
+            <span class="group-title">Bevel Structure</span>
             <div style="display:flex; gap:5px; margin-bottom:8px;">
                 <div class="btn active" id="style-inner">Inner</div>
                 <div class="btn" id="style-outer">Outer</div>
@@ -72,15 +76,15 @@
         </div>
 
         <div class="group">
-            <strong>Giroscop / Shading</strong>
-            <div class="row"><label>Angle:</label><input type="range" id="angle" min="0" max="360" value="214"><span id="v-angle">214°</span></div>
-            <div class="row"><label>Altitude:</label><input type="range" id="altitude" min="0" max="90" value="10"><span id="v-altitude">10°</span></div>
+            <strong>Giroscop</strong>
             <div class="btn" id="toggle-alt-gyro" style="background:#ffcc00; margin-top:5px">Altitude Dynamic: OFF</div>
             <div class="btn" id="activate-sensors" style="background:#00ffcc">Activate Sensors</div>
+            <div class="row"><label>Angle:</label><input type="range" id="angle" min="0" max="360" value="214"><span id="v-angle">214°</span></div>
+            <div class="row"><label>Altitude:</label><input type="range" id="altitude" min="0" max="90" value="10"><span id="v-altitude">10°</span></div>
         </div>
 
         <div class="group">
-            <strong>Opacity</strong>
+            <strong>Layer Opacity</strong>
             <div class="row"><label>HDRI Op:</label><input type="range" id="hdri-op" min="0" max="100" value="50"><span id="v-hdri-op">50%</span></div>
             <div class="row"><label>High Op:</label><input type="range" id="h-op" min="0" max="100" value="75"><span id="v-h-op">75%</span></div>
             <div class="row"><label>Shadow Op:</label><input type="range" id="s-op" min="0" max="100" value="9"><span id="v-s-op">9%</span></div>
@@ -90,14 +94,19 @@
     <div class="viewport">
         <svg id="coin-svg" viewBox="0 0 1080 2280">
             <defs>
-                <!-- MASCA FIXA: 301x301 px -->
+                <!-- MASCA MONEDA -->
                 <clipPath id="coin-mask">
                     <circle cx="494" cy="1180" r="150.5" />
                 </clipPath>
 
+                <!-- TILING PATTERN PENTRU HDRI -->
+                <pattern id="hdri-pattern" patternUnits="userSpaceOnUse" width="1024" height="1024">
+                    <image id="hdri-img-src" href="hdri.jpg" x="0" y="0" width="1024" height="1024" />
+                </pattern>
+
                 <filter id="f-light">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
-                    <feGaussianBlur in="m" id="l-blur" stdDeviation="2.5" />
+                    <feGaussianBlur in="m" stdDeviation="2.5" />
                     <feSpecularLighting surfaceScale="5.5" specularExponent="20" lighting-color="white">
                         <feDistantLight id="h-dir" azimuth="214" elevation="10" />
                     </feSpecularLighting>
@@ -106,7 +115,7 @@
 
                 <filter id="f-shadow">
                     <feColorMatrix type="luminanceToAlpha" result="m" />
-                    <feGaussianBlur in="m" id="s-blur" stdDeviation="2.5" />
+                    <feGaussianBlur in="m" stdDeviation="2.5" />
                     <feDiffuseLighting surfaceScale="5.5" lighting-color="black">
                         <feDistantLight id="s-dir" azimuth="214" elevation="10" />
                     </feDiffuseLighting>
@@ -117,10 +126,11 @@
             <!-- 1. Baza -->
             <image href="diffuse.png" width="1080" height="2280" />
 
-            <!-- 2. REFLEXIA HDRI CU MASCA 301px -->
+            <!-- 2. REFLEXIA HDRI REPETATA (TILING) -->
             <g clip-path="url(#coin-mask)">
-                <image id="hdri-layer" href="hdri.jpg" x="0" y="0" width="1024" height="1024" 
-                       style="mix-blend-mode: plus-lighter; opacity: 0.5;" />
+                <!-- Rect-ul este mare pentru a acoperi orice miscare, pattern-ul se repeta in el -->
+                <rect id="hdri-rect" x="-2000" y="-2000" width="5000" height="5000" fill="url(#hdri-pattern)" 
+                      style="mix-blend-mode: plus-lighter; opacity: 0.5;" />
             </g>
 
             <!-- 3. Bevel Layers -->
@@ -135,12 +145,13 @@
         let altitudeDynamic = false;
         let lastGyro = { beta: 0, gamma: 0 };
 
-        const hdri = document.getElementById('hdri-layer');
+        const hdriRect = document.getElementById('hdri-rect');
+        const hdriPattern = document.getElementById('hdri-pattern');
+        const hdriImg = document.getElementById('hdri-img-src');
         const hDir = document.getElementById('h-dir');
         const sDir = document.getElementById('s-dir');
 
         function update() {
-            // Valorile de la slidere
             const depth = document.getElementById('depth').value;
             const size = document.getElementById('size').value;
             const angle = document.getElementById('angle').value;
@@ -149,26 +160,27 @@
             const sOp = document.getElementById('s-op').value / 100;
             const hdriOp = document.getElementById('hdri-op').value / 100;
             
-            // Noi valori HDRI
+            const hdriSc = document.getElementById('hdri-sc').value / 100;
             const hdriBr = document.getElementById('hdri-br').value;
             const hdriCt = document.getElementById('hdri-ct').value;
             const hdriRot = document.getElementById('hdri-rot').value;
             const hdriManualX = parseFloat(document.getElementById('hdri-x').value);
             const hdriManualY = parseFloat(document.getElementById('hdri-y').value);
 
-            // Labels Update
+            // Labels
             document.getElementById('v-depth').innerText = depth + "%";
             document.getElementById('v-size').innerText = size + "px";
             document.getElementById('v-angle').innerText = angle + "°";
             document.getElementById('v-altitude').innerText = altitude + "°";
             document.getElementById('v-hdri-br').innerText = hdriBr + "%";
             document.getElementById('v-hdri-ct').innerText = hdriCt + "%";
+            document.getElementById('v-hdri-sc').innerText = Math.round(hdriSc * 100) + "%";
             document.getElementById('v-hdri-x').innerText = hdriManualX;
             document.getElementById('v-hdri-y').innerText = hdriManualY;
             document.getElementById('v-hdri-rot').innerText = hdriRot + "°";
             document.getElementById('v-hdri-op').innerText = Math.round(hdriOp * 100) + "%";
 
-            // Apply SVG filters params
+            // SVG Bevel
             const surfaceScale = (depth / 100) * 25;
             document.getElementById('f-light').querySelector('feSpecularLighting').setAttribute('surfaceScale', surfaceScale);
             document.getElementById('f-shadow').querySelector('feDiffuseLighting').setAttribute('surfaceScale', surfaceScale);
@@ -179,20 +191,25 @@
             sDir.setAttribute('azimuth', angle);
             sDir.setAttribute('elevation', altitude);
 
-            // Opacity & CSS Filters for HDRI
-            document.getElementById('light-layer').style.opacity = hOp;
-            document.getElementById('shadow-layer').style.opacity = sOp;
-            hdri.style.opacity = hdriOp;
-            hdri.style.filter = `brightness(${hdriBr}%) contrast(${hdriCt}%)`;
+            // HDRI Appearance
+            hdriRect.style.opacity = hdriOp;
+            hdriImg.style.filter = `brightness(${hdriBr}%) contrast(${hdriCt}%)`;
 
-            // Transform HDRI (Gyro + Manual)
-            // Centrare: imagine 1024 pe punct 494/1180 => offset start -18, 668
-            let gyroX = lastGyro.gamma * -4;
-            let gyroY = lastGyro.beta * -4;
-            let finalX = -18 + gyroX + hdriManualX;
-            let finalY = 668 + gyroY + hdriManualY;
+            // HDRI Tiling and Scale
+            const patternSize = 1024 * hdriSc;
+            hdriPattern.setAttribute('width', patternSize);
+            hdriPattern.setAttribute('height', patternSize);
+            hdriImg.setAttribute('width', patternSize);
+            hdriImg.setAttribute('height', patternSize);
+
+            // HDRI Movement (High Sensitivity: Multiplier -12)
+            let gyroX = lastGyro.gamma * -12; 
+            let gyroY = lastGyro.beta * -12;
+            let finalX = 494 - (patternSize/2) + gyroX + hdriManualX;
+            let finalY = 1180 - (patternSize/2) + gyroY + hdriManualY;
             
-            hdri.setAttribute('transform', `translate(${finalX}, ${finalY}) rotate(${hdriRot}, 512, 512)`);
+            // Aplicam rotatia si translatia pe pattern
+            hdriPattern.setAttribute('patternTransform', `translate(${finalX}, ${finalY}) rotate(${hdriRot}, ${patternSize/2}, ${patternSize/2})`);
 
             // Inner/Outer
             const op = (currentStyle === 'inner') ? 'in' : 'out';
@@ -205,7 +222,6 @@
             lastGyro.beta = event.beta || 0;
             lastGyro.gamma = event.gamma || 0;
 
-            // Direct mapping pentru Angle (Asemănător cu Altitude)
             let angleRad = Math.atan2(lastGyro.beta, -lastGyro.gamma);
             let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
             document.getElementById('angle').value = Math.round(angleDeg);
@@ -217,14 +233,13 @@
             update();
         }
 
-        // Listeners
         document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
         document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); update(); };
         document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); update(); };
         document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
         document.getElementById('activate-sensors').onclick = () => document.getElementById('gyro-overlay').style.display = 'flex';
         document.getElementById('start-gyro-btn').onclick = async () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
                 if (res === 'granted') {
                     window.addEventListener('deviceorientation', handleOrientation);
