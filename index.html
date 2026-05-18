@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - Smooth Gyro Engine</title>
+    <title>2D Coin - Instant Gyro Engine</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1a1a; display: flex; font-family: 'Segoe UI', sans-serif; }
         #ui-panel { width: 280px; background: #cecece; border-right: 2px solid #555; padding: 15px; color: #000; z-index: 1000; font-size: 11px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
         h3 { margin: 0 0 10px 0; background: #666; color: white; padding: 5px; border: 1px inset #eee; font-size: 12px; text-align: center; }
         .group { border: 1px solid #999; padding: 8px; margin-bottom: 10px; background: #e1e1e1; border-radius: 3px; }
+        .group-title { display: block; margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #ccc; text-transform: uppercase; font-size: 10px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; gap: 5px; }
         label { width: 95px; font-weight: bold; }
         input[type=range] { flex-grow: 1; cursor: pointer; }
@@ -51,7 +52,6 @@
             <div class="row"><label>Highlight Op:</label><input type="range" id="h-op" min="0" max="100" value="75"><span id="v-h-op">75%</span></div>
             <div class="row"><label>Shadow Op:</label><input type="range" id="s-op" min="0" max="100" value="9"><span id="v-s-op">9%</span></div>
         </div>
-        <div style="font-size:9px; color:#666; text-align:center;">Angle: <span id="log-angle">0</span>° | Alt: <span id="log-alt">0</span>°</div>
     </div>
 
     <div class="viewport">
@@ -85,94 +85,86 @@
         let gyroActive = false;
         let altitudeDynamic = false;
 
-        // Parametrii pentru Smooth Movement
-        let state = {
-            angle: 214,
-            alt: 10,
-            targetAngle: 214,
-            targetAlt: 10
-        };
-
         const hDir = document.getElementById('h-dir');
         const sDir = document.getElementById('s-dir');
+        const specNode = document.getElementById('spec-node');
+        const diffNode = document.getElementById('diff-node');
+        const lBlur = document.getElementById('l-blur');
+        const sBlur = document.getElementById('s-blur');
+        const lightLayer = document.getElementById('light-layer');
+        const shadowLayer = document.getElementById('shadow-layer');
 
         function update() {
             const depth = document.getElementById('depth').value;
             const size = document.getElementById('size').value;
+            const angle = document.getElementById('angle').value;
+            const altitude = document.getElementById('altitude').value;
             const hOp = document.getElementById('h-op').value / 100;
             const sOp = document.getElementById('s-op').value / 100;
 
-            // Labels
+            // Update Labels
             document.getElementById('v-depth').innerText = depth + "%";
             document.getElementById('v-size').innerText = size + "px";
+            document.getElementById('v-angle').innerText = angle + "°";
+            document.getElementById('v-altitude').innerText = altitude + "°";
             document.getElementById('v-h-op').innerText = Math.round(hOp * 100) + "%";
             document.getElementById('v-s-op').innerText = Math.round(sOp * 100) + "%";
 
-            // Smoothing pentru unghi (shortest path logic)
-            let angleDiff = state.targetAngle - state.angle;
-            if (angleDiff > 180) angleDiff -= 360;
-            if (angleDiff < -180) angleDiff += 360;
-            state.angle += angleDiff * 0.1; // 0.1 este viteza de raspuns (lerp)
-
-            // Smoothing pentru altitudine
-            state.alt += (state.targetAlt - state.alt) * 0.1;
-
-            // Update SVG
+            // Update SVG direct
             const surfaceScale = (depth / 100) * 25;
-            document.getElementById('spec-node').setAttribute('surfaceScale', surfaceScale);
-            document.getElementById('diff-node').setAttribute('surfaceScale', surfaceScale);
-            document.getElementById('l-blur').setAttribute('stdDeviation', size / 4);
-            document.getElementById('s-blur').setAttribute('stdDeviation', size / 4);
+            specNode.setAttribute('surfaceScale', surfaceScale);
+            diffNode.setAttribute('surfaceScale', surfaceScale);
+            lBlur.setAttribute('stdDeviation', size / 4);
+            sBlur.setAttribute('stdDeviation', size / 4);
 
-            hDir.setAttribute('azimuth', state.angle);
-            hDir.setAttribute('elevation', state.alt);
-            sDir.setAttribute('azimuth', state.angle);
-            sDir.setAttribute('elevation', state.alt);
+            hDir.setAttribute('azimuth', angle);
+            hDir.setAttribute('elevation', altitude);
+            sDir.setAttribute('azimuth', angle);
+            sDir.setAttribute('elevation', altitude);
 
-            document.getElementById('light-layer').style.opacity = hOp;
-            document.getElementById('shadow-layer').style.opacity = sOp;
-            
-            document.getElementById('v-angle').innerText = Math.round(state.angle) + "°";
-            document.getElementById('v-altitude').innerText = Math.round(state.alt) + "°";
-            document.getElementById('log-angle').innerText = Math.round(state.angle);
-            document.getElementById('log-alt').innerText = Math.round(state.alt);
+            lightLayer.style.opacity = hOp;
+            shadowLayer.style.opacity = sOp;
 
             const op = (currentStyle === 'inner') ? 'in' : 'out';
             document.getElementById('h-mask').setAttribute('operator', op);
             document.getElementById('s-mask').setAttribute('operator', op);
-
-            requestAnimationFrame(update);
         }
 
         function handleOrientation(event) {
             if (!gyroActive) return;
+            
             let beta = event.beta || 0; 
             let gamma = event.gamma || 0;
 
-            // Calculam tinta pentru unghi (Direction)
+            // Calcul unghi direct (fără smoothing)
             let angleRad = Math.atan2(beta, -gamma);
-            state.targetAngle = (angleRad * (180 / Math.PI) + 360) % 360;
+            let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+            
+            // Setăm valorile sliderelor direct
+            document.getElementById('angle').value = Math.round(angleDeg);
 
-            // Calculam tinta pentru altitudine
             if (altitudeDynamic) {
                 let tilt = Math.sqrt(beta * beta + gamma * gamma);
-                state.targetAlt = Math.max(5, Math.min(85, 90 - tilt));
-            } else {
-                state.targetAlt = document.getElementById('altitude').value;
+                let finalAlt = Math.max(5, Math.min(85, 90 - tilt));
+                document.getElementById('altitude').value = Math.round(finalAlt);
             }
+
+            // Aplicăm instantaneu
+            update();
         }
 
-        // Sliderele updateaza doar tintele
-        document.getElementById('angle').oninput = (e) => state.targetAngle = parseFloat(e.target.value);
-        document.getElementById('altitude').oninput = (e) => state.targetAlt = parseFloat(e.target.value);
+        // Listeners pentru slidere
+        document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
 
-        // UI Listeners
-        document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); };
-        document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); };
+        // Style Toggles
+        document.getElementById('style-inner').onclick = (e) => { currentStyle = 'inner'; e.target.classList.add('active'); document.getElementById('style-outer').classList.remove('active'); update(); };
+        document.getElementById('style-outer').onclick = (e) => { currentStyle = 'outer'; e.target.classList.add('active'); document.getElementById('style-inner').classList.remove('active'); update(); };
         document.getElementById('toggle-alt-gyro').onclick = (e) => { altitudeDynamic = !altitudeDynamic; e.target.innerText = "Altitude Dynamic: " + (altitudeDynamic ? "ON" : "OFF"); e.target.classList.toggle('active'); };
+        
+        // Senzori
         document.getElementById('activate-sensors').onclick = () => document.getElementById('gyro-overlay').style.display = 'flex';
         document.getElementById('start-gyro-btn').onclick = async () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const response = await DeviceOrientationEvent.requestPermission();
                 if (response === 'granted') {
                     window.addEventListener('deviceorientation', handleOrientation);
@@ -188,7 +180,8 @@
             }
         };
 
-        requestAnimationFrame(update);
+        // Inițializare
+        update();
     </script>
 </body>
 </html>
