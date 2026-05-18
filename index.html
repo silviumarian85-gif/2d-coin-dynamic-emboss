@@ -3,119 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Coin - Gyro Engine</title>
+    <title>2D Coin - Gyro Fixed</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
-        canvas, svg { width: 100% !important; height: 100% !important; object-fit: contain; display: block; }
+        svg { width: 100% !important; height: 100% !important; object-fit: contain; display: block; }
 
-        /* Ascundem panoul de control conform cerinței */
-        #ui-panel, #arrow-controls { display: none; }
-
-        /* Buton Activare Giroscop (Necesar pentru iOS/Android) */
+        /* Buton Activare Giroscop */
         #gyro-btn {
-            position: absolute; bottom: 20px; padding: 12px 24px;
-            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 30px; cursor: pointer; z-index: 2000; font-size: 14px; backdrop-filter: blur(5px);
+            position: absolute; bottom: 20%; padding: 15px 30px;
+            background: #fff; color: #000; border: none;
+            border-radius: 50px; cursor: pointer; z-index: 9999; 
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
 
-    <button id="gyro-btn">Apasă pentru a activa reflexiile</button>
+    <button id="gyro-btn">ACTIVEAZĂ EFECTUL DINAMIC</button>
 
-    <div class="viewport">
-        <svg id="coin-svg" viewBox="0 0 1080 2280" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <!-- FILTRU LUMINĂ (Add) -->
-                <filter id="f-light" x="-20%" y="-20%" width="140%" height="140%">
-                    <feColorMatrix type="luminanceToAlpha" result="mask" />
-                    <feComponentTransfer in="mask" result="cleanMask">
-                        <feFuncA type="linear" slope="2" intercept="-0.1" />
-                    </feComponentTransfer>
-                    <feGaussianBlur in="cleanMask" stdDeviation="2.5" result="blur" /> <!-- 10px / 4 conform scale-ului -->
-                    <feSpecularLighting in="blur" id="spec-node" surfaceScale="5.5" specularConstant="1" specularExponent="20" lighting-color="#ffffff"> <!-- 22% depth -->
-                        <feDistantLight id="h-dir" azimuth="214" elevation="10" />
-                    </feSpecularLighting>
-                    <feComposite in2="cleanMask" operator="in" />
-                </filter>
+    <svg id="coin-svg" viewBox="0 0 1080 2280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <!-- FILTRU LUMINĂ (Add) -->
+            <filter id="f-light" x="-20%" y="-20%" width="140%" height="140%">
+                <feColorMatrix type="luminanceToAlpha" result="mask" />
+                <feGaussianBlur in="mask" stdDeviation="2.5" result="blur" />
+                <feSpecularLighting in="blur" id="spec-node" surfaceScale="5.5" specularConstant="1" specularExponent="20" lighting-color="#ffffff">
+                    <feDistantLight id="h-light-dir" azimuth="214" elevation="10" />
+                </feSpecularLighting>
+                <feComposite in2="mask" operator="in" />
+            </filter>
 
-                <!-- FILTRU UMBRĂ (Multiply) -->
-                <filter id="f-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feColorMatrix type="luminanceToAlpha" result="mask" />
-                    <feComponentTransfer in="mask" result="cleanMask">
-                        <feFuncA type="linear" slope="2" intercept="-0.1" />
-                    </feComponentTransfer>
-                    <feGaussianBlur in="cleanMask" stdDeviation="2.5" result="blur" />
-                    <feDiffuseLighting in="blur" id="diff-node" surfaceScale="5.5" diffuseConstant="1" lighting-color="#000000">
-                        <feDistantLight id="s-dir" azimuth="214" elevation="10" />
-                    </feDiffuseLighting>
-                    <feComposite in2="cleanMask" operator="in" />
-                </filter>
-            </defs>
+            <!-- FILTRU UMBRĂ (Multiply) -->
+            <filter id="f-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feColorMatrix type="luminanceToAlpha" result="mask" />
+                <feGaussianBlur in="mask" stdDeviation="2.5" result="blur" />
+                <feDiffuseLighting in="blur" id="diff-node" surfaceScale="5.5" diffuseConstant="1" lighting-color="#000000">
+                    <feDistantLight id="s-light-dir" azimuth="214" elevation="10" />
+                </feDiffuseLighting>
+                <feComposite in2="mask" operator="in" />
+            </filter>
+        </defs>
 
-            <!-- 1. Baza: Imaginea Diffuse -->
-            <image href="diffuse.png" x="0" y="0" width="1080" height="2280" preserveAspectRatio="none" />
+        <!-- 1. Baza: Imaginea Diffuse -->
+        <image href="diffuse.png" x="0" y="0" width="1080" height="2280" />
 
-            <!-- 2. Umbra: 9% Opacity -->
-            <image id="shadow-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
-                   preserveAspectRatio="none" filter="url(#f-shadow)" style="mix-blend-mode: multiply; opacity: 0.09;" />
+        <!-- 2. Umbra: 9% Opacity -->
+        <image id="shadow-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
+               filter="url(#f-shadow)" style="mix-blend-mode: multiply; opacity: 0.09;" />
 
-            <!-- 3. Lumina: 75% Opacity -->
-            <image id="light-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
-                   preserveAspectRatio="none" filter="url(#f-light)" style="mix-blend-mode: plus-lighter; opacity: 0.75;" />
-        </svg>
-    </div>
+        <!-- 3. Lumina: 75% Opacity -->
+        <image id="light-layer" href="height-map-coin.png" x="0" y="0" width="1080" height="2280" 
+               filter="url(#f-light)" style="mix-blend-mode: plus-lighter; opacity: 0.75;" />
+    </svg>
 
-    <script type="module">
-        const hDir = document.getElementById('h-dir');
-        const sDir = document.getElementById('s-dir');
+    <script>
+        const hLight = document.getElementById('h-light-dir');
+        const sLight = document.getElementById('s-light-dir');
         const gyroBtn = document.getElementById('gyro-btn');
 
-        // VALORI DE BAZĂ
-        const baseAngle = 214;
-        const baseAlt = 10;
-
         function handleOrientation(event) {
-            // Beta: înclinare față-spate (-180 la 180)
-            // Gamma: înclinare stânga-dreapta (-90 la 90)
-            let beta = event.beta || 0; 
-            let gamma = event.gamma || 0;
+            // Beta: înclinare înainte-înapoi (x)
+            // Gamma: înclinare stânga-dreapta (y)
+            const beta = event.beta; 
+            const gamma = event.gamma;
 
-            // Limităm valorile pentru o mișcare naturală când telefonul stă în palmă
-            // Calculăm un offset pentru unghi bazat pe înclinarea laterală
-            let angleOffset = gamma * 1.5; 
-            // Calculăm altitudinea bazată pe înclinarea față-spate
-            let altOffset = Math.abs(beta) * 0.5;
+            if (beta !== null && gamma !== null) {
+                // Calculăm unghiul de 360 grade (Azimuth) folosind ArcTangent
+                // Înclinarea telefonului devine direcția luminii
+                let angleRad = Math.atan2(gamma, beta);
+                let angleDeg = angleRad * (180 / Math.PI);
+                
+                // Ajustăm unghiul pentru a corespunde sistemului SVG (0-360)
+                let finalAngle = (angleDeg + 180) % 360;
 
-            let newAngle = (baseAngle + angleOffset) % 360;
-            let newAlt = Math.max(5, Math.min(60, baseAlt + altOffset));
+                // Calculăm Altitudinea (Elevation)
+                // Cu cât telefonul este mai înclinat, cu atât lumina e mai razantă
+                let tiltAmount = Math.sqrt(beta * beta + gamma * gamma);
+                let finalAlt = Math.max(5, Math.min(60, 90 - tiltAmount));
 
-            // Aplicăm noile valori în filtrele SVG
-            hDir.setAttribute('azimuth', newAngle);
-            hDir.setAttribute('elevation', newAlt);
-            sDir.setAttribute('azimuth', newAngle);
-            sDir.setAttribute('elevation', newAlt);
+                // Aplicăm direct pe nodurile SVG DistantLight
+                hLight.setAttribute('azimuth', finalAngle);
+                hLight.setAttribute('elevation', finalAlt);
+                sLight.setAttribute('azimuth', finalAngle);
+                sLight.setAttribute('elevation', finalAlt);
+            }
         }
 
-        async function requestPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        async function activateGyro() {
+            // Verificare pentru iOS 13+ care cere permisiune explicită
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation);
                         gyroBtn.style.display = 'none';
+                    } else {
+                        alert("Permisiunea pentru senzori a fost respinsă.");
                     }
-                } catch (error) {
-                    console.error("Eroare senzori:", error);
+                } catch (e) {
+                    alert("Eroare la solicitarea senzorilor.");
                 }
             } else {
-                // Pentru Android sau browsere care nu cer permisiune explicită
+                // Pentru Android sau versiuni vechi de iOS
                 window.addEventListener('deviceorientation', handleOrientation);
                 gyroBtn.style.display = 'none';
             }
         }
 
-        gyroBtn.addEventListener('click', requestPermission);
+        gyroBtn.addEventListener('click', activateGyro);
     </script>
 </body>
 </html>
